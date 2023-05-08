@@ -10,3 +10,8 @@ body {
 .page-container {
     margin-top: 75px;
 }
+
+#journalText{
+    border-color: black;
+    background-color: #DDDDDD;
+}

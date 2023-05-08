@@ -16,10 +16,85 @@ rhit.HomeManager = null;
 rhit.GroupsManager = null;
 rhit.JournalManager = null;
 rhit.SoundsManager = null;
+
+rhit.FB_COLLECTION_JOURNAL = "JournalEntry";
+rhit.FB_KEY_DATE = "date";
+rhit.FB_KEY_RATING = "Entry";
+rhit.FB_KEY_AUTHOR = "author";
+rhit.FB_KEY_ENTRY = "entry";
+rhit.FB_KEY_LAST_TOUCHED = "lastTouched";
 /** function and class syntax examples */
 rhit.functionName = function () {
 	/** function body */
 };
+
+
+rhit.JournalEntry = class {
+	constructor(id, date, rating, entry){
+		this.id = id;
+		this.date = date;
+		this.rating = rating;
+		this.entry = entry;
+	}
+}
+
+rhit.JournalManager = class {
+	constructor(uid){
+		this.__uid = uid;
+		this._documentSnapshots = [];
+		this.ref_ = firebase.firestore().collection(rhit.FB_COLLECTION_JOURNAL);
+	}
+
+	add(entry, rating, date){
+		this.__ref.add({
+			[rhit.FB_KEY_ENTRY]: entry,
+			[rhit.FB_KEY_RATING]: rating,
+			[rhit.FB_KEY_DATE]: date,
+			[rhit.FB_KEY_AUTHOR]:rhit.fbAuthManager.uid,
+			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
+
+		})
+		.then(function(docRef){
+			console.log("Doc written with ID: ", docRef.id);
+		})
+		.catch(function(error){
+			console.error("Error adding doc: ", error);
+		})
+	}
+
+	beginListening(changeListener) {
+		let query = this._ref.orderBy(rhit.FB_KEY_LAST_TOUCHED, "desc").limit(50)
+		if(this._uid){
+			query = query.where(rhit.FB_KEY_AUTHOR, "==", this.uid);
+		}
+		this._unsubscribe = query
+		.onSnapshot((querySnapshot) => {
+
+			this._documentSnapshots = querySnapshot.docs;
+	
+
+			changeListener();
+
+		});
+	}
+	stopListening() {
+		this._unsubscribe();
+	}
+
+	get length() {
+		return this._documentSnapshots.length;
+	}
+	getMovieQuoteAtIndex(index) {
+		const docSnapshot = this._documentSnapshots[index];
+		const mq = new rhit.MovieQuote(
+			docSnapshot.id,
+			docSnapshot.get(rhit.FB_KEY_ENTRY),
+			docSnapshot.get(rhit.FB_KEY_DATE),
+			docSnapshot.get(rhit.FB_KEY_RATING)
+		);
+		return mq;
+	}
+}
 
 rhit.LoginPageController = class {
 	constructor() {
