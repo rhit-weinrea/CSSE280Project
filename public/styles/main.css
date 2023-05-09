@@ -15,3 +15,41 @@ body {
     border-color: black;
     background-color: #DDDDDD;
 }
+
+#groupButtonsContainer{
+    display: flex;
+    flex: 1;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#buttonsContainer{
+    display: flex;
+    flex: 1;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.groupButton{
+    margin: 20px;
+    border: none;
+    color: #631D76;
+    width: 60vw;
+    height: 20vh;
+    font-size: 1em;
+}
+
+#joinGroup{
+    background-color: #631D76;
+    color: white;
+    border: none;
+    width: 60vw;
+    height: 5vh;
+}
+
+strong{
+    font-size: 2em;
+}
+
