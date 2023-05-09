@@ -84,7 +84,7 @@ rhit.JournalManager = class {
 	get length() {
 		return this._documentSnapshots.length;
 	}
-	getMovieQuoteAtIndex(index) {
+	getJournalAtDate(index) {
 		const docSnapshot = this._documentSnapshots[index];
 		const mq = new rhit.MovieQuote(
 			docSnapshot.id,
@@ -251,7 +251,7 @@ rhit.initializePage = function() {
 		const urlParams = new URLSearchParams(window.location.search);
 		const uid = urlParams.get("uid");
 		rhit.fbPhotoManager = new rhit.FbPhotoManager(uid);
-		new rhit.ListPageController();
+		new rhit.PageController();
 		
 
 		
