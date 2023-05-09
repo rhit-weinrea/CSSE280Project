@@ -17,6 +17,17 @@ body {
     background-color: #DDDDDD;
 }
 
+#saveButton{
+    margin: auto;
+    border: none;
+    color: #631D76;
+    background-color: white;
+    width: 10vw;
+    height: 5vh;
+    font-size: 1em;
+    align-items: center;
+}
+
 #groupButtonsContainer{
     display: flex;
     flex: 1;
