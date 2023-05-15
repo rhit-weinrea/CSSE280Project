@@ -160,10 +160,17 @@ rhit.FbAuthManager = class {
 	beginListening(changeListener) {
 		firebase.auth().onAuthStateChanged((user) => {
 			this._user = user;
-			let uid;
-
 			if(user){
-				uid = user.uid;
+				let isInDataBase = false;
+				firebase.firestore().collection('users').where('email', '==', user.email).get()
+				.then((querySnapshot) =>{
+					querySnapshot.forEach((doc) => {
+						isInDataBase = true;
+					});
+					if(!isInDataBase){
+						this.addUserToDatabase();
+					}
+				})
 				console.log("signed in");
 			}
 			else
@@ -176,6 +183,12 @@ rhit.FbAuthManager = class {
 		firebase.auth().signOut().catch((e) => {
 			console.log("Error");
 		});
+	}
+	addUserToDatabase(){
+		firebase.firestore().collection('users').add({
+			email: this._user.email,
+			groups: []
+		})
 	}
 	get isSignedIn() {
 		return !!this._user;
@@ -202,7 +215,8 @@ rhit.LoginPageController = class {
 	
 		document.querySelector("#createAccountButton").onclick = (event) => {
 			console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-			firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
+			firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value)
+			.catch(function (error) {
 				var errorCode = error.code;
 				var errorMessage = error.message;
 				console.log("Create account error", errorCode, errorMessage);
@@ -274,6 +288,7 @@ rhit.initializePage = function() {
 	if (document.querySelector("#loginPage")) {
 		console.log("login");
 		new rhit.LoginPageController();
+		rhit.startFirebaseUI();
 	}
 
 	if (document.querySelector("#homePage")) {
@@ -307,7 +322,6 @@ rhit.main = function () {
 		rhit.checkForRedirects();
 		rhit.initializePage();
 	});
-	rhit.startFirebaseUI();
 };
 
 
