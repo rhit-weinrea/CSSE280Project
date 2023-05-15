@@ -16,6 +16,7 @@ rhit.HomeManager = null;
 rhit.GroupsManager = null;
 rhit.JournalManager = null;
 rhit.SoundsManager = null;
+rhit.fbAuthManager = null;
 
 rhit.FB_COLLECTION_JOURNAL = "JournalEntry";
 rhit.FB_KEY_DATE = "date";
@@ -152,51 +153,146 @@ rhit.GroupsManager = class {
 	}
 }
 
+rhit.FbAuthManager = class {
+	constructor() {
+	  this._user = null;
+	}
+	beginListening(changeListener) {
+		firebase.auth().onAuthStateChanged((user) => {
+			this._user = user;
+			if(user){
+				let isInDataBase = false;
+				firebase.firestore().collection('users').where('email', '==', user.email).get()
+				.then((querySnapshot) =>{
+					querySnapshot.forEach((doc) => {
+						isInDataBase = true;
+					});
+					if(!isInDataBase){
+						this.addUserToDatabase();
+					}
+				})
+				console.log("signed in");
+			}
+			else
+				console.log("not signed in");
+
+			changeListener();
+		});
+	}
+	signOut() {
+		firebase.auth().signOut().catch((e) => {
+			console.log("Error");
+		});
+	}
+	addUserToDatabase(){
+		firebase.firestore().collection('users').add({
+			email: this._user.email,
+			groups: []
+		})
+	}
+	get isSignedIn() {
+		return !!this._user;
+	}
+	get uid() {
+		return this._user.uid;
+	}
+	get displayName(){
+		return this._user.displayName;
+	}
+	get isAnonymous(){
+		return this._user.isAnonymous;
+	}
+}
+
 rhit.LoginPageController = class {
 	constructor() {
-
+		const inputEmailEl = document.querySelector("#inputEmail");
+		const inputPasswordEl = document.querySelector("#inputPassword");
+	
+		document.querySelector("#signOutButton").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
+	
+		document.querySelector("#createAccountButton").onclick = (event) => {
+			console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
+			firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value)
+			.catch(function (error) {
+				var errorCode = error.code;
+				var errorMessage = error.message;
+				console.log("Create account error", errorCode, errorMessage);
+			});
+		};
+		document.querySelector("#logInButton").onclick = (event) => {
+			console.log(`Log in for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
+			firebase.auth().signInWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
+				var errorCode = error.code;
+				var errorMessage = error.message;
+				console.log("Existing account log in error", errorCode, errorMessage);
+			});
+		};
+	
+		document.querySelector("#anonymousAuthButton").onclick = (event) => {
+			firebase.auth().signInAnonymously().catch(function (error) {
+				var errorCode = error.code;
+				var errorMessage = error.message;
+				console.log("Anonymous auth error", errorCode, errorMessage);
+			});
+		};
 	}
 
 }
 
 rhit.HomePageController = class {
 	constructor () {
-
+		document.querySelector("#signOut").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
 	}
 }
 
 rhit.GroupsPageController = class {
 	constructor () {
-		
+		document.querySelector("#signOut").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
 	}
 }
 
 rhit.JournalPageController = class {
 	constructor () {
-		
+		document.querySelector("#signOut").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
 	}
 }
 
 rhit.SoundsPageController = class {
 	constructor () {
-		
+		document.querySelector("#signOut").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
 	}
 }
 
+rhit.checkForRedirects = function(){
+	if (document.querySelector("#loginPage") && rhit.fbAuthManager.isSignedIn) {
+		window.location.href = "/home.html";
+	}
+	if (!document.querySelector("#loginPage") && !rhit.fbAuthManager.isSignedIn) {
+		window.location.href = "/";
+	}
+}
 
 rhit.initializePage = function() {
 	console.log("initializing");
 	if (document.querySelector("#loginPage")) {
 		console.log("login");
 		new rhit.LoginPageController();
-		
-
-		
+		rhit.startFirebaseUI();
 	}
 
-
-	if (document.querySelector("#loginPage")) {
-		console.log("detail");
+	if (document.querySelector("#homePage")) {
+		console.log("home");
         const urlParams = new URLSearchParams(window.location.search);
         new rhit.HomePageController();
     }
@@ -204,81 +300,30 @@ rhit.initializePage = function() {
 	if (document.querySelector("#journalPage")) {
 		console.log("journal");
 		new rhit.JournalPageController();
-		
 	}
 
 	if (document.querySelector("#groupsPage")) {
 		console.log("groups");
 		new rhit.GroupsPageController();
-		
 	}
 
 	if (document.querySelector("#soundsPage")) {
 		console.log("sounds");
 		new rhit.SoundsPageController();
-		
 	}
 
 };
-	
-
 
 /* Main */
 /** function and class syntax examples */
 rhit.main = function () {
-	firebase.auth().onAuthStateChanged(function(user) {
-		if(user) {
-			var displayName = user.displayName;
-			var email = user.email;
-			var emailVerified = user.emailVerified;
-			var photoURL = user.photoURL;
-			var isAnonymous = user.isAnonymous;
-			var uid = user.uid;
-			var providerData = user.providerData;
-			console.log("signed in");
-		} else {
-			console.log("no sign in");
-		}
+	rhit.fbAuthManager = new rhit.FbAuthManager();
+	rhit.fbAuthManager.beginListening(() => {
+		rhit.checkForRedirects();
+		rhit.initializePage();
 	});
-
-	const inputEmailEl = document.querySelector("#inputEmail");
-	const inputPasswordEl = document.querySelector("#inputPassword");
-
-	document.querySelector("#signOutButton").onclick = (event) => {
-		firebase.auth().signOut().then(function () {
-			console.log("signed out");
-		}).catch(function(error){
-			console.log("sign out error");
-		});
-	};
-
-	document.querySelector("#createAccountButton").onclick = (event) => {
-		console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-		firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
-			var errorCode = error.code;
-			var errorMessage = error.message;
-			console.log("Create account error", errorCode, errorMessage);
-		});
-	};
-	document.querySelector("#logInButton").onclick = (event) => {
-		console.log(`Log in for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-		firebase.auth().signInWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
-			var errorCode = error.code;
-			var errorMessage = error.message;
-			console.log("Existing account log in error", errorCode, errorMessage);
-		});
-	};
-
-	document.querySelector("#anonymousAuthButton").onclick = (event) => {
-		firebase.auth().signInAnonymously().catch(function (error) {
-			var errorCode = error.code;
-			var errorMessage = error.message;
-			console.log("Anonymous auth error", errorCode, errorMessage);
-		});
-	};
-
-	rhit.startFirebaseUI();
 };
+
 
 //FIREBASE LOGIN
 rhit.startFirebaseUI = function() {
@@ -292,43 +337,40 @@ rhit.startFirebaseUI = function() {
 		],
 	};
 
-	
 	const ui = new firebaseui.auth.AuthUI(firebase.auth());
 	ui.start("#firebaseui-auth-container", uiConfig);
 }
 
-rhit.initializePage = function() {
-	console.log("initializing");
-	if (document.querySelector("#listPage")) {
-		console.log("list");
-		const urlParams = new URLSearchParams(window.location.search);
-		const uid = urlParams.get("uid");
-		rhit.fbPhotoManager = new rhit.FbPhotoManager(uid);
-		new rhit.PageController();
+// rhit.initializePage = function() {
+// 	console.log("initializing");
+// 	if (document.querySelector("#listPage")) {
+// 		console.log("list");
+// 		const urlParams = new URLSearchParams(window.location.search);
+// 		const uid = urlParams.get("uid");
+// 		rhit.fbPhotoManager = new rhit.FbPhotoManager(uid);
+// 		new rhit.PageController();
+// 	}
+
+
+// 	if (document.querySelector("#detailPage")) {
+// 		console.log("detail");
+//         const urlParams = new URLSearchParams(window.location.search);
+//         const photoID = urlParams.get("id");
+//         if (!photoID) {
+//             window.location.href = "/";
+//         }
+// 		console.log('before photo mag')
+//         rhit.fbSinglePhotoManager = new rhit.FbSinglePhotoManager(photoID);
+// 		console.log('before detail controller')
+//         new rhit.DetailPageController();
+//     }
+
+// 	if (document.querySelector("#loginPage")) {
+// 		console.log("login");
+// 		new rhit.LoginPageController();
 		
-		
-	}
+// 	}
 
-
-	if (document.querySelector("#detailPage")) {
-		console.log("detail");
-        const urlParams = new URLSearchParams(window.location.search);
-        const photoID = urlParams.get("id");
-        if (!photoID) {
-            window.location.href = "/";
-        }
-		console.log('before photo mag')
-        rhit.fbSinglePhotoManager = new rhit.FbSinglePhotoManager(photoID);
-		console.log('before detail controller')
-        new rhit.DetailPageController();
-    }
-
-	if (document.querySelector("#loginPage")) {
-		console.log("login");
-		new rhit.LoginPageController();
-		
-	}
-
-};
+// };
 
 rhit.main();
