@@ -10,12 +10,11 @@
 var rhit = rhit || {};
 
 /** globals */
-rhit.variableName = "";
-rhit.LoginManager = null;
-rhit.HomeManager = null;
-rhit.GroupsManager = null;
-rhit.JournalManager = null;
-rhit.SoundsManager = null;
+rhit.fbLoginManager = null;
+rhit.fbHomeManager = null;
+rhit.fbGroupsManager = null;
+rhit.fbJournalManager = null;
+rhit.fbSoundsManager = null;
 rhit.fbAuthManager = null;
 
 rhit.FB_COLLECTION_JOURNAL = "JournalEntry";
@@ -38,6 +37,11 @@ rhit.JournalEntry = class {
 		this.entry = entry;
 	}
 }
+
+
+/**************************
+ * Managers
+ **************************/
 
 rhit.JournalManager = class {
 	constructor(uid){
@@ -98,8 +102,7 @@ rhit.JournalManager = class {
 }
 
 rhit.GroupsManager = class {
-	constructor(uid){
-		this._uid = uid;
+	constructor(){
 		this._documentSnapshots = [];
 		this._ref = firebase.firestore().collection('groups');
 	}
@@ -139,7 +142,14 @@ rhit.GroupsManager = class {
 	}
 
 	get length() {
-		return this._documentSnapshots.length;
+		let length = 0;
+		firebase.firebase().collection('users').doc().where('email', '==', user.email).get()
+		.then((querySnapshot) =>{
+			querySnapshot.forEach((doc) => {
+				length = doc.data().groups.length;
+			});
+		})
+		return length;
 	}
 	getMovieQuoteAtIndex(index) {
 		const docSnapshot = this._documentSnapshots[index];
@@ -204,6 +214,10 @@ rhit.FbAuthManager = class {
 	}
 }
 
+/*******************************
+ *Page Controllers
+ *******************************/
+
 rhit.LoginPageController = class {
 	constructor() {
 		const inputEmailEl = document.querySelector("#inputEmail");
@@ -256,6 +270,31 @@ rhit.GroupsPageController = class {
 			rhit.fbAuthManager.signOut();
 		};
 	}
+	updateList() {
+		const newList = htmlToElement("<div id='groupButtonsContainer'></div>")
+		for (let k = 0; k < rhit.fbGroupsManager.length; k++) {
+			const group = rhit.fbGroupsManager.getGroupAtIndex(k);
+			const newCard = this._createCard(group);
+			newCard.onclick = (event) => {
+				console.log(` Save the id ${movieQuote.id} then change pages`);
+				window.location.href = `/movieQuote.html?id=${movieQuote.id}`;
+			};
+			newList.appendChild(newCard);
+		}
+
+		const oldList = document.querySelector("#groupButtonsContainer");
+		oldList.removeAttribute("id");
+		oldList.hidden = true;
+		oldList.parentElement.appendChild(newList);
+	}
+
+	_createCard(group) {
+		return htmlToElement(`<div id="${group.name}" class="card">
+		<div class="card-body">
+			<h5 class="card-title">${group.description}</h5>
+		</div>
+	</div>`);
+	}
 }
 
 rhit.JournalPageController = class {
@@ -304,6 +343,7 @@ rhit.initializePage = function() {
 
 	if (document.querySelector("#groupsPage")) {
 		console.log("groups");
+		rhit.fbGroupsManager = new rhit.GroupsManager();
 		new rhit.GroupsPageController();
 	}
 
