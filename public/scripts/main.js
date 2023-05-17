@@ -184,8 +184,38 @@ rhit.JournalPageController = class {
 
 rhit.SoundsPageController = class {
 	constructor () {
-		
-	}
+
+		document.addEventListener('DOMContentLoaded', function() {
+			const soundButtons = document.querySelectorAll('.sound-button');
+			const soundPlayer = document.getElementById('sound-player');
+			let isPlaying = false;
+			
+			soundButtons.forEach(function(button) {
+			  button.addEventListener('click', function() {
+				const sound = this.getAttribute('data-sound');
+				if (isPlaying && !soundPlayer.paused && soundPlayer.getAttribute('data-sound') === sound) {
+				  pauseSound();
+				} else {
+				  playSound(sound);
+				}
+			  });
+			});
+			
+			function playSound(sound) {
+			  soundPlayer.src = `sounds/${sound}.mp3`;
+			  soundPlayer.loop = true;
+			  soundPlayer.setAttribute('data-sound', sound);
+			  soundPlayer.play();
+			  isPlaying = true;
+			}
+			
+			function pauseSound() {
+			  soundPlayer.pause();
+			  isPlaying = false;
+			}
+		  });
+
+		}
 }
 
 
