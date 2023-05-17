@@ -10,12 +10,12 @@
 var rhit = rhit || {};
 
 /** globals */
-rhit.fbLoginManager = null;
-rhit.fbHomeManager = null;
-rhit.fbGroupsManager = null;
-rhit.fbJournalManager = null;
-rhit.fbSoundsManager = null;
-rhit.fbAuthManager = null;
+rhit.variableName = "";
+rhit.LoginManager = null;
+rhit.HomeManager = null;
+rhit.GroupsManager = null;
+rhit.JournalManager = null;
+rhit.SoundsManager = null;
 
 rhit.FB_COLLECTION_JOURNAL = "JournalEntry";
 rhit.FB_KEY_DATE = "date";
@@ -38,11 +38,6 @@ rhit.JournalEntry = class {
 	}
 }
 
-
-/**************************
- * Managers
- **************************/
-
 rhit.JournalManager = class {
 	constructor(uid){
 		this.__uid = uid;
@@ -51,11 +46,11 @@ rhit.JournalManager = class {
 	}
 
 	add(entry, rating, date){
-		this.__ref.add({
+		this.ref_.add({
 			[rhit.FB_KEY_ENTRY]: entry,
 			[rhit.FB_KEY_RATING]: rating,
 			[rhit.FB_KEY_DATE]: date,
-			[rhit.FB_KEY_AUTHOR]:rhit.fbAuthManager.uid,
+			[rhit.FB_KEY_AUTHOR]: this.__uid,
 			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
 
 		})
@@ -102,7 +97,8 @@ rhit.JournalManager = class {
 }
 
 rhit.GroupsManager = class {
-	constructor(){
+	constructor(uid){
+		this._uid = uid;
 		this._documentSnapshots = [];
 		this._ref = firebase.firestore().collection('groups');
 	}
@@ -142,14 +138,7 @@ rhit.GroupsManager = class {
 	}
 
 	get length() {
-		let length = 0;
-		firebase.firebase().collection('users').doc().where('email', '==', user.email).get()
-		.then((querySnapshot) =>{
-			querySnapshot.forEach((doc) => {
-				length = doc.data().groups.length;
-			});
-		})
-		return length;
+		return this._documentSnapshots.length;
 	}
 	getMovieQuoteAtIndex(index) {
 		const docSnapshot = this._documentSnapshots[index];
@@ -163,207 +152,141 @@ rhit.GroupsManager = class {
 	}
 }
 
-rhit.FbAuthManager = class {
-	constructor() {
-	  this._user = null;
-	}
-	beginListening(changeListener) {
-		firebase.auth().onAuthStateChanged((user) => {
-			this._user = user;
-			if(user){
-				let isInDataBase = false;
-				firebase.firestore().collection('users').where('email', '==', user.email).get()
-				.then((querySnapshot) =>{
-					querySnapshot.forEach((doc) => {
-						isInDataBase = true;
-					});
-					if(!isInDataBase){
-						this.addUserToDatabase();
-					}
-				})
-				console.log("signed in");
-			}
-			else
-				console.log("not signed in");
-
-			changeListener();
-		});
-	}
-	signOut() {
-		firebase.auth().signOut().catch((e) => {
-			console.log("Error");
-		});
-	}
-	addUserToDatabase(){
-		firebase.firestore().collection('users').add({
-			email: this._user.email,
-			groups: []
-		})
-	}
-	get isSignedIn() {
-		return !!this._user;
-	}
-	get uid() {
-		return this._user.uid;
-	}
-	get displayName(){
-		return this._user.displayName;
-	}
-	get isAnonymous(){
-		return this._user.isAnonymous;
-	}
-}
-
-/*******************************
- *Page Controllers
- *******************************/
-
 rhit.LoginPageController = class {
 	constructor() {
-		const inputEmailEl = document.querySelector("#inputEmail");
-		const inputPasswordEl = document.querySelector("#inputPassword");
-	
-		document.querySelector("#signOutButton").onclick = (event) => {
-			rhit.fbAuthManager.signOut();
-		};
-	
-		document.querySelector("#createAccountButton").onclick = (event) => {
-			console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-			firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value)
-			.catch(function (error) {
-				var errorCode = error.code;
-				var errorMessage = error.message;
-				console.log("Create account error", errorCode, errorMessage);
-			});
-		};
-		document.querySelector("#logInButton").onclick = (event) => {
-			console.log(`Log in for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-			firebase.auth().signInWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
-				var errorCode = error.code;
-				var errorMessage = error.message;
-				console.log("Existing account log in error", errorCode, errorMessage);
-			});
-		};
-	
-		document.querySelector("#anonymousAuthButton").onclick = (event) => {
-			firebase.auth().signInAnonymously().catch(function (error) {
-				var errorCode = error.code;
-				var errorMessage = error.message;
-				console.log("Anonymous auth error", errorCode, errorMessage);
-			});
-		};
+
 	}
 
 }
 
 rhit.HomePageController = class {
 	constructor () {
-		document.querySelector("#signOut").onclick = (event) => {
-			rhit.fbAuthManager.signOut();
-		};
+
 	}
 }
 
 rhit.GroupsPageController = class {
 	constructor () {
-		document.querySelector("#signOut").onclick = (event) => {
-			rhit.fbAuthManager.signOut();
-		};
-	}
-	updateList() {
-		const newList = htmlToElement("<div id='groupButtonsContainer'></div>")
-		for (let k = 0; k < rhit.fbGroupsManager.length; k++) {
-			const group = rhit.fbGroupsManager.getGroupAtIndex(k);
-			const newCard = this._createCard(group);
-			newCard.onclick = (event) => {
-				console.log(` Save the id ${movieQuote.id} then change pages`);
-				window.location.href = `/movieQuote.html?id=${movieQuote.id}`;
-			};
-			newList.appendChild(newCard);
-		}
-
-		const oldList = document.querySelector("#groupButtonsContainer");
-		oldList.removeAttribute("id");
-		oldList.hidden = true;
-		oldList.parentElement.appendChild(newList);
-	}
-
-	_createCard(group) {
-		return htmlToElement(`<div id="${group.name}" class="card">
-		<div class="card-body">
-			<h5 class="card-title">${group.description}</h5>
-		</div>
-	</div>`);
+		
 	}
 }
 
 rhit.JournalPageController = class {
 	constructor () {
-		document.querySelector("#signOut").onclick = (event) => {
-			rhit.fbAuthManager.signOut();
-		};
+		document.querySelector("#saveButton").addEventListener("click", (event) => {
+			console.log("journal save")
+			const entry = document.querySelector("#journalText").value;
+			let date = new Date().toUTCString().slice(5, 16);
+			rhit.JournalManager.add(entry, 0, date);
+		});
 	}
 }
 
 rhit.SoundsPageController = class {
 	constructor () {
-		document.querySelector("#signOut").onclick = (event) => {
-			rhit.fbAuthManager.signOut();
-		};
+		
 	}
 }
 
-rhit.checkForRedirects = function(){
-	if (document.querySelector("#loginPage") && rhit.fbAuthManager.isSignedIn) {
-		window.location.href = "/home.html";
-	}
-	if (!document.querySelector("#loginPage") && !rhit.fbAuthManager.isSignedIn) {
-		window.location.href = "/";
-	}
-}
 
 rhit.initializePage = function() {
 	console.log("initializing");
 	if (document.querySelector("#loginPage")) {
 		console.log("login");
 		new rhit.LoginPageController();
-		rhit.startFirebaseUI();
+		
+
+		
 	}
 
-	if (document.querySelector("#homePage")) {
-		console.log("home");
+
+	if (document.querySelector("#loginPage")) {
+		console.log("detail");
         const urlParams = new URLSearchParams(window.location.search);
         new rhit.HomePageController();
     }
 
 	if (document.querySelector("#journalPage")) {
 		console.log("journal");
+		rhit.JournalManager = new rhit.JournalManager();
 		new rhit.JournalPageController();
+		
 	}
 
 	if (document.querySelector("#groupsPage")) {
 		console.log("groups");
-		rhit.fbGroupsManager = new rhit.GroupsManager();
 		new rhit.GroupsPageController();
+		
 	}
 
 	if (document.querySelector("#soundsPage")) {
 		console.log("sounds");
 		new rhit.SoundsPageController();
+		
 	}
 
 };
+	
+
 
 /* Main */
 /** function and class syntax examples */
 rhit.main = function () {
-	rhit.fbAuthManager = new rhit.FbAuthManager();
-	rhit.fbAuthManager.beginListening(() => {
-		rhit.checkForRedirects();
-		rhit.initializePage();
+	firebase.auth().onAuthStateChanged(function(user) {
+		if(user) {
+			var displayName = user.displayName;
+			var email = user.email;
+			var emailVerified = user.emailVerified;
+			var photoURL = user.photoURL;
+			var isAnonymous = user.isAnonymous;
+			var uid = user.uid;
+			var providerData = user.providerData;
+			console.log("signed in");
+		} else {
+			console.log("no sign in");
+		}
 	});
-};
 
+	rhit.initializePage();
+
+	const inputEmailEl = document.querySelector("#inputEmail");
+	const inputPasswordEl = document.querySelector("#inputPassword");
+
+	// document.querySelector("#signOutButton").onclick = (event) => {
+	// 	firebase.auth().signOut().then(function () {
+	// 		console.log("signed out");
+	// 	}).catch(function(error){
+	// 		console.log("sign out error");
+	// 	});
+	// };
+
+	// document.querySelector("#createAccountButton").onclick = (event) => {
+	// 	console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
+	// 	firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
+	// 		var errorCode = error.code;
+	// 		var errorMessage = error.message;
+	// 		console.log("Create account error", errorCode, errorMessage);
+	// 	});
+	// };
+	// document.querySelector("#logInButton").onclick = (event) => {
+	// 	console.log(`Log in for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
+	// 	firebase.auth().signInWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
+	// 		var errorCode = error.code;
+	// 		var errorMessage = error.message;
+	// 		console.log("Existing account log in error", errorCode, errorMessage);
+	// 	});
+	// };
+
+	// document.querySelector("#anonymousAuthButton").onclick = (event) => {
+	// 	firebase.auth().signInAnonymously().catch(function (error) {
+	// 		var errorCode = error.code;
+	// 		var errorMessage = error.message;
+	// 		console.log("Anonymous auth error", errorCode, errorMessage);
+	// 	});
+	// };
+
+	// rhit.startFirebaseUI();
+};
 
 //FIREBASE LOGIN
 rhit.startFirebaseUI = function() {
@@ -377,6 +300,7 @@ rhit.startFirebaseUI = function() {
 		],
 	};
 
+	
 	const ui = new firebaseui.auth.AuthUI(firebase.auth());
 	ui.start("#firebaseui-auth-container", uiConfig);
 }
@@ -389,6 +313,8 @@ rhit.startFirebaseUI = function() {
 // 		const uid = urlParams.get("uid");
 // 		rhit.fbPhotoManager = new rhit.FbPhotoManager(uid);
 // 		new rhit.PageController();
+		
+		
 // 	}
 
 
