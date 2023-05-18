@@ -1,3 +1,5 @@
+
+
 /**
  * @fileoverview
  * Provides the JavaScript interactions for all pages.
@@ -17,11 +19,13 @@ rhit.GroupsManager = null;
 rhit.JournalManager = null;
 rhit.SoundsManager = null;
 
+rhit.badVariable = null;
+
 rhit.FB_COLLECTION_JOURNAL = "JournalEntry";
 rhit.FB_KEY_DATE = "date";
-rhit.FB_KEY_RATING = "Entry";
-rhit.FB_KEY_AUTHOR = "author";
-rhit.FB_KEY_ENTRY = "entry";
+rhit.FB_KEY_RATING = "Rating";
+rhit.FB_KEY_AUTHOR = "Author";
+rhit.FB_KEY_ENTRY = "Entry";
 rhit.FB_KEY_LAST_TOUCHED = "lastTouched";
 /** function and class syntax examples */
 rhit.functionName = function () {
@@ -38,19 +42,25 @@ rhit.JournalEntry = class {
 	}
 }
 
-rhit.JournalManager = class {
+rhit.JournalEntriesManager = class {
 	constructor(uid){
 		this.__uid = uid;
 		this._documentSnapshots = [];
-		this.ref_ = firebase.firestore().collection(rhit.FB_COLLECTION_JOURNAL);
+		this.__ref = firebase.firestore().collection('users').doc(uid).collection('journalEntries');
 	}
 
 	add(entry, rating, date){
-		this.ref_.add({
+		console.log({
 			[rhit.FB_KEY_ENTRY]: entry,
 			[rhit.FB_KEY_RATING]: rating,
 			[rhit.FB_KEY_DATE]: date,
-			[rhit.FB_KEY_AUTHOR]: this.__uid,
+			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
+
+		});
+		rhit.badVariable = this.__ref.add({
+			[rhit.FB_KEY_ENTRY]: entry,
+			[rhit.FB_KEY_RATING]: rating,
+			[rhit.FB_KEY_DATE]: date,
 			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
 
 		})
@@ -60,6 +70,10 @@ rhit.JournalManager = class {
 		.catch(function(error){
 			console.error("Error adding doc: ", error);
 		})
+
+		console.log("initiated adding");
+		console.log("my uid=", this.__uid);
+		console.log(rhit.badVariable);
 	}
 
 	beginListening(changeListener) {
@@ -175,9 +189,11 @@ rhit.JournalPageController = class {
 	constructor () {
 		document.querySelector("#saveButton").addEventListener("click", (event) => {
 			console.log("journal save")
-			const entry = document.querySelector("#journalText").value;
+			const entryJou = document.querySelector("#journalText").value;
 			let date = new Date().toUTCString().slice(5, 16);
-			rhit.JournalManager.add(entry, 0, date);
+			rhit.JournalEntriesManager.add(entryJou, 0, date);
+			console.log("after add");
+			event.preventDefault();
 		});
 	}
 }
@@ -191,29 +207,29 @@ rhit.SoundsPageController = class {
 			let isPlaying = false;
 			
 			soundButtons.forEach(function(button) {
-			  button.addEventListener('click', function() {
+				button.addEventListener('click', function() {
 				const sound = this.getAttribute('data-sound');
 				if (isPlaying && !soundPlayer.paused && soundPlayer.getAttribute('data-sound') === sound) {
-				  pauseSound();
+					pauseSound();
 				} else {
-				  playSound(sound);
+					playSound(sound);
 				}
-			  });
+				});
 			});
 			
 			function playSound(sound) {
-			  soundPlayer.src = `sounds/${sound}.mp3`;
-			  soundPlayer.loop = true;
-			  soundPlayer.setAttribute('data-sound', sound);
-			  soundPlayer.play();
-			  isPlaying = true;
+				soundPlayer.src = `sounds/${sound}.mp3`;
+				soundPlayer.loop = true;
+				soundPlayer.setAttribute('data-sound', sound);
+				soundPlayer.play();
+				isPlaying = true;
 			}
 			
 			function pauseSound() {
-			  soundPlayer.pause();
-			  isPlaying = false;
+				soundPlayer.pause();
+				isPlaying = false;
 			}
-		  });
+		});
 
 		}
 }
@@ -221,13 +237,13 @@ rhit.SoundsPageController = class {
 
 rhit.initializePage = function() {
 	console.log("initializing");
-	if (document.querySelector("#loginPage")) {
-		console.log("login");
-		new rhit.LoginPageController();
+	// if (document.querySelector("#loginPage")) {
+	// 	console.log("login");
+	// 	new rhit.LoginPageController();
 		
 
 		
-	}
+	// }
 
 
 	if (document.querySelector("#loginPage")) {
@@ -238,7 +254,7 @@ rhit.initializePage = function() {
 
 	if (document.querySelector("#journalPage")) {
 		console.log("journal");
-		rhit.JournalManager = new rhit.JournalManager();
+		rhit.JournalEntriesManager = new rhit.JournalEntriesManager(firebase.auth().currentUser.uid);
 		new rhit.JournalPageController();
 		
 	}
@@ -275,53 +291,21 @@ rhit.main = function () {
 		} else {
 			console.log("no sign in");
 		}
+		rhit.initializePage();
 	});
 
-	rhit.initializePage();
+	
 
-	const inputEmailEl = document.querySelector("#inputEmail");
-	const inputPasswordEl = document.querySelector("#inputPassword");
-
-	// document.querySelector("#signOutButton").onclick = (event) => {
-	// 	firebase.auth().signOut().then(function () {
-	// 		console.log("signed out");
-	// 	}).catch(function(error){
-	// 		console.log("sign out error");
-	// 	});
-	// };
-
-	// document.querySelector("#createAccountButton").onclick = (event) => {
-	// 	console.log(`Create account for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-	// 	firebase.auth().createUserWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
-	// 		var errorCode = error.code;
-	// 		var errorMessage = error.message;
-	// 		console.log("Create account error", errorCode, errorMessage);
-	// 	});
-	// };
-	// document.querySelector("#logInButton").onclick = (event) => {
-	// 	console.log(`Log in for email: ${inputEmailEl.value} password:  ${inputPasswordEl.value}`);
-	// 	firebase.auth().signInWithEmailAndPassword(inputEmailEl.value, inputPasswordEl.value).catch(function (error) {
-	// 		var errorCode = error.code;
-	// 		var errorMessage = error.message;
-	// 		console.log("Existing account log in error", errorCode, errorMessage);
-	// 	});
-	// };
-
-	// document.querySelector("#anonymousAuthButton").onclick = (event) => {
-	// 	firebase.auth().signInAnonymously().catch(function (error) {
-	// 		var errorCode = error.code;
-	// 		var errorMessage = error.message;
-	// 		console.log("Anonymous auth error", errorCode, errorMessage);
-	// 	});
-	// };
-
-	// rhit.startFirebaseUI();
+	if(document.querySelector("#firebaseui-auth-container")){
+		rhit.startFirebaseUI();
+	}
+	
 };
 
 //FIREBASE LOGIN
 rhit.startFirebaseUI = function() {
 	var uiConfig = {
-		signInSuccessUrl: '/',
+		signInSuccessUrl: '/home.html',
 		signInOptions: [
 			firebase.auth.GoogleAuthProvider.PROVIDER_ID,
 			firebase.auth.EmailAuthProvider.PROVIDER_ID,
@@ -330,43 +314,15 @@ rhit.startFirebaseUI = function() {
 		],
 	};
 
+	if(firebaseui.auth.AuthUI.getInstance()) {
+		const ui = firebaseui.auth.AuthUI.getInstance()
+		ui.start('#firebaseui-auth-container', uiConfig)
+	  } else {
+		const ui = new firebaseui.auth.AuthUI(firebase.auth())
+		ui.start('#firebaseui-auth-container', uiConfig)
+	  }
 	
-	const ui = new firebaseui.auth.AuthUI(firebase.auth());
-	ui.start("#firebaseui-auth-container", uiConfig);
 }
 
-// rhit.initializePage = function() {
-// 	console.log("initializing");
-// 	if (document.querySelector("#listPage")) {
-// 		console.log("list");
-// 		const urlParams = new URLSearchParams(window.location.search);
-// 		const uid = urlParams.get("uid");
-// 		rhit.fbPhotoManager = new rhit.FbPhotoManager(uid);
-// 		new rhit.PageController();
-		
-		
-// 	}
-
-
-// 	if (document.querySelector("#detailPage")) {
-// 		console.log("detail");
-//         const urlParams = new URLSearchParams(window.location.search);
-//         const photoID = urlParams.get("id");
-//         if (!photoID) {
-//             window.location.href = "/";
-//         }
-// 		console.log('before photo mag')
-//         rhit.fbSinglePhotoManager = new rhit.FbSinglePhotoManager(photoID);
-// 		console.log('before detail controller')
-//         new rhit.DetailPageController();
-//     }
-
-// 	if (document.querySelector("#loginPage")) {
-// 		console.log("login");
-// 		new rhit.LoginPageController();
-		
-// 	}
-
-// };
 
 rhit.main();
