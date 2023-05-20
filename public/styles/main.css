@@ -224,8 +224,17 @@ body{
     background-color: #631D76;
     color: white;
     border: none;
-    width: 60vw;
+    width: 30vw;
     height: 5vh;
+    margin: auto;
+}
+#makeGroup{
+    background-color: white;
+    color: #631D76;
+    border: none;
+    width: 30vw;
+    height: 5vh;
+    margin: auto;
 }
 
 strong{
@@ -239,7 +248,7 @@ strong{
     gap: 10px;
   }
   
-  .sound-button {
+.sound-button {
     padding: 10px 20px;
     background-color: #631D76;
     color: #fff;
@@ -247,20 +256,22 @@ strong{
     border-radius: 4px;
     font-size: 16px;
     cursor: pointer;
-  }
+}
   
-  .sound-button:hover {
+.sound-button:hover {
     background-color: #4b145a;
-  }
+}
   
-  .sound-button:active {
+.sound-button:active {
     background-color: #350f3f;
-  }
+}
 
-  .card {
+.card {
     background-color: #f0f0f0;
     padding: 10px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+
 
