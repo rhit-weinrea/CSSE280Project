@@ -50,6 +50,7 @@ rhit.JournalEntriesManager = class {
 	}
 
 	add(entry, rating, date){
+		
 		console.log({
 			[rhit.FB_KEY_ENTRY]: entry,
 			[rhit.FB_KEY_RATING]: rating,
@@ -57,6 +58,10 @@ rhit.JournalEntriesManager = class {
 			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
 
 		});
+		
+		
+		
+	
 		rhit.badVariable = this.__ref.add({
 			[rhit.FB_KEY_ENTRY]: entry,
 			[rhit.FB_KEY_RATING]: rating,
@@ -108,6 +113,31 @@ rhit.JournalEntriesManager = class {
 		);
 		return mq;
 	}
+	createCard(entry, date){
+		var card = document.createElement('div');
+		card.id = date;
+		card.className = 'card';
+		var header = document.createElement('h2');
+		header.textContent = date;
+		var textElement = document.createElement('p');
+		textElement.textContent = date;
+		card.appendChild(textElement);
+		var container = document.getElementById('container');
+		container.appendChild(card);
+
+		card.addEventListener('click', (event) => {
+			console.log("click")
+			// Prevent editing when clicking inside the text element
+			if (event.target === textElement) {
+				return;
+			}
+
+			// Disable editing when clicking outside the text element
+			textElement.contentEditable = false;
+		});
+	}
+
+	
 }
 
 rhit.GroupsManager = class {
@@ -192,6 +222,7 @@ rhit.JournalPageController = class {
 			const entryJou = document.querySelector("#journalText").value;
 			let date = new Date().toUTCString().slice(5, 16);
 			rhit.JournalEntriesManager.add(entryJou, 0, date);
+			rhit.JournalEntriesManager.createCard(entryJou,date);
 			console.log("after add");
 			event.preventDefault();
 		});
