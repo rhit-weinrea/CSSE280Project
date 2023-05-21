@@ -168,6 +168,25 @@ rhit.AuthManager = class {
 		};
 		firebase.firestore().collection('users').add(userObject)
 	}
+	addGroup(group){
+		let ob;
+		let curGroups;
+		firebase.firestore().collection('users').where('email', '==', this._user.email).get()
+		.then((querySnapshot) =>{
+			querySnapshot.forEach((doc) => {
+				ob = doc.id;
+				curGroups = doc.data().groups;
+			});
+			if(!curGroups.includes(group)){
+				curGroups.push(group);
+				firebase.firestore().collection("users").doc(ob).update({
+					groups: curGroups
+				})
+				rhit.fbGroupsManager.updateGroupDisplay();
+			}
+			
+		})
+	}
 	get isSignedIn() {
 		return !!this._user;
 	}
@@ -208,40 +227,61 @@ rhit.GroupsManager = class {
 		this._ref = firebase.firestore().collection('groups');
 	}
 
-	addGroup(group){
-		// TODO: Get id of group
-		// add group to users
-		// add user to group
-		this._ref.add({
-			['users']: users,
-		})
-		.then(function(docRef){
-			console.log("Doc written with ID: ", docRef.id);
-		})
-		.catch(function(error){
-			console.error("Error adding doc: ", error);
+	addPost(content, id){
+		this._ref.doc(id).collection('posts').add({
+			content: content,
+			author: rhit.fbAuthManager.displayName,
+			timestamp: firebase.firestore.Timestamp.now()
+		});
+		document.querySelector('#postsContainer').innerHTML += `<div class="myPost">
+		<div class="postText">
+			<h5>${doc.data().content}</h5>
+		</div>
+		</div>`;
+	}
+
+	makeGroup(name, des){
+		this._ref.where("name", "==", name).get()
+		.then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				alert("A group with this name already exists");
+				return;
+			});
+			this._ref.add({
+				name: name,
+				description: des,
+			}).then(() =>{
+				rhit.fbAuthManager.addGroup(name);
+				this.updateGroupDisplay();
+			})
 		})
 	}
 
-	addPost(){
-
-	}
-
-	beginListening(changeListener) {
-		query = this._ref.where(rhit.FB_KEY_AUTHOR, "==", this.uid);
-		this._unsubscribe = query
-		.onSnapshot((querySnapshot) => {
-			this._documentSnapshots = querySnapshot.docs;
-			changeListener();
+	updatePosts(id){
+		document.querySelector('#postsContainer').innerHTML = '';
+		this._ref.doc(id).collection('posts').orderBy('timestamp', "desc").limit(50).get().then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				if(doc.data().author == rhit.fbAuthManager.displayName){
+					document.querySelector('#postsContainer').innerHTML += `<div class="myPost">
+					<div class="postText">
+						<h5>${doc.data().content}</h5>
+					</div>
+					</div>`;
+				}
+				else{
+					document.querySelector('#postsContainer').innerHTML += `<div class="post">
+					<label for="${doc.id}">&nbsp;${doc.data().author}</label>
+					<div class="postText" id="${doc.id}">
+						<h5>${doc.data().content}</h5>
+					</div>
+					</div>`;
+				}
+				doc.data()
+			});
 		});
 	}
-	stopListening() {
-		this._unsubscribe();
-	}
 
-	async updategroupDisplay(){
-		document.querySelector('#groupButtonsContainer').innerHTML = '';
-
+	async updateGroupDisplay(){
 		let ob = await rhit.fbAuthManager.getuserObject();
 		let groups = ob.groups;
 		for(let i = 0; i < groups.length; i++){
@@ -253,19 +293,53 @@ rhit.GroupsManager = class {
 				querySnapshot.forEach((doc) => {
 					name = doc.data().name;
 					description = doc.data().description;
-					document.querySelector('#groupButtonsContainer').innerHTML += `<button class="groupButton">
-					<strong>${name}</strong><hr>${description}</button>`;
+					if(i == 0)
+						document.querySelector('#groupButtonsContainer').innerHTML = '';
+					document.querySelector('#groupButtonsContainer').innerHTML += `
+					<a href="singleGroup.html?groupId=${doc.id}">
+					<button class="groupButton" >
+					<strong>${name}</strong><hr>${description}</button></a>`;
 				});
 			})
 		}
 	}
+
+	updateSearchResults(searchField){
+		document.querySelector('#groupListContainer').innerHTML = '';
+		this._ref.get().then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				if(doc.data().name.toLowerCase().includes(searchField.toLowerCase()))
+					document.querySelector('#groupListContainer').innerHTML += `<div class="groupListing" data-dismiss="modal"
+					onclick="rhit.addGroup('${doc.data().name}')">
+					<h5>${doc.data().name}</h5>
+					<h7>${doc.data().description}</h7>
+				  </div>`;
+			});
+		});
+	}
 }
+rhit.addGroup = ((name) =>{
+	rhit.fbAuthManager.addGroup(name);
+})
 
 rhit.LoginPageController = class {
 	constructor() {
 
 	}
 
+}
+
+rhit.SingleGroupPageController = class{
+	constructor(groupId) {
+		document.querySelector("#signOut").onclick = (event) => {
+			rhit.fbAuthManager.signOut();
+		};
+		document.querySelector("#addPostButton").onclick = (event) => {
+			let content = document.querySelector("#addPostText").value;
+			rhit.fbGroupsManager.addPost(content, groupId);
+		};
+		rhit.fbGroupsManager.updatePosts(groupId);
+	}
 }
 
 rhit.HomePageController = class {
@@ -281,7 +355,17 @@ rhit.GroupsPageController = class {
 		document.querySelector("#signOut").onclick = (event) => {
 			rhit.fbAuthManager.signOut();
 		};
-		rhit.fbGroupsManager.updategroupDisplay();
+		document.querySelector("#searchButton").onclick = (event) => {
+			let searchField = document.querySelector('#searchField').value;
+			rhit.fbGroupsManager.updateSearchResults(searchField);
+		};
+		document.querySelector("#makeGroupButton").onclick = (event) => {
+			let groupName = document.querySelector('#newGroupName').value.trim();
+			let groupDes = document.querySelector('#newGroupDescription').value.trim();
+			rhit.fbGroupsManager.makeGroup(groupName, groupDes);
+		};
+		rhit.fbGroupsManager.updateGroupDisplay();
+		rhit.fbGroupsManager.updateSearchResults('');
 	}
 }
 
@@ -304,40 +388,39 @@ rhit.JournalPageController = class {
 
 rhit.SoundsPageController = class {
 	constructor () {
-		console.log("sounds");
 
-		// document.addEventListener('DOMContentLoaded', function() {
-		// 	console.log("sounds");
-		// 	const soundButtons = document.querySelectorAll('.sound-button');
-		// 	const soundPlayer = document.getElementById('sound-player');
-		// 	let isPlaying = false;
-			
-			soundButtons.forEach(function(button) {
-				button.addEventListener('click', function() {
+		const soundButtons = document.querySelectorAll('.sound-button');
+		const soundPlayer = document.getElementById('sound-player');
+		let isPlaying = false;
+		soundButtons.forEach(function(button) {
+			button.addEventListener('click', function() {
 				const sound = this.getAttribute('data-sound');
 				if (isPlaying && !soundPlayer.paused && soundPlayer.getAttribute('data-sound') === sound) {
 					pauseSound();
 				} else {
 					playSound(sound);
 				}
-				});
 			});
+
 			
-			function playSound(sound) {
-				soundPlayer.src = `sounds/${sound}.mp3`;
-				soundPlayer.loop = true;
-				soundPlayer.setAttribute('data-sound', sound);
-				soundPlayer.play();
-				isPlaying = true;
-			}
-			
-			function pauseSound() {
-				soundPlayer.pause();
-				isPlaying = false;
-			}
-		// });
+
+
+		});
+		
+		function playSound(sound) {
+			soundPlayer.src = `sounds/${sound}.mp3`;
+			soundPlayer.loop = true;
+			soundPlayer.setAttribute('data-sound', sound);
+			soundPlayer.play();
+			isPlaying = true;
 
 		}
+		
+		function pauseSound() {
+			soundPlayer.pause();
+			isPlaying = false;
+		}
+	}
 }
 
 
@@ -367,10 +450,16 @@ rhit.initializePage = function() {
 		new rhit.GroupsPageController();
 	}
 
+	if (document.querySelector("#singleGroupPage")) {
+		const urlParams = new URLSearchParams(window.location.search);
+		console.log("singleGroup");
+		rhit.fbGroupsManager = new rhit.GroupsManager();
+		new rhit.SingleGroupPageController(urlParams.get('groupId'));
+	}
+
 	if (document.querySelector("#soundsPage")) {
 		console.log("sounds");
 		new rhit.SoundsPageController();
-		
 	}
 
 };
