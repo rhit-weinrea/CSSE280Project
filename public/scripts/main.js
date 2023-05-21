@@ -76,6 +76,25 @@ rhit.JournalEntriesManager = class {
 			}
 		})
 	}
+	deleteEntry(date){
+		let a = false;
+		this._ref.where("date", "==", date).get()
+		.then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				a = true;
+				this._ref.doc(doc.id).delete().then(()=>{
+					document.querySelector('#journalText').value = '';
+					let options = document.querySelectorAll('.btn-secondary')
+					for(let i = 0; i < options.length; i++)
+						if(options[i].classList.contains('active'))
+							options[i].classList.remove('active');
+					alert(`Entry for ${date} successfully deleted`);
+				});
+			});
+			if(!a)
+				alert('Nothing to delete');
+		})
+	}
 	get length() {
 		return this._documentSnapshots.length;
 	}
@@ -374,8 +393,11 @@ rhit.JournalPageController = class {
 			else
 				alert('Choose date');
 		};
+		document.querySelector("#deleteButton").onclick = (event) => {
+			let date = document.querySelector("#date").value;
+			rhit.fbJournalEntriesManager.deleteEntry(date);
+		};
 		document.querySelector("#saveButton").addEventListener("click", (event) => {
-			console.log("journal save")
 			const entryJou = document.querySelector("#journalText").value;
 			let date = document.querySelector("#date").value;
 			let options = document.querySelectorAll('.btn-secondary')
@@ -390,8 +412,6 @@ rhit.JournalPageController = class {
 			else
 				alert("Choose date and rating")
 			
-			//console.log("after add");
-			//event.preventDefault();
 		});
 	}
 }

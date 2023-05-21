@@ -220,6 +220,17 @@ body{
     align-items: center;
 }
 
+#deleteButton{
+    margin: auto;
+    border: none;
+    color: white;
+    background-color: #631D76;
+    width: 10vw;
+    height: 5vh;
+    font-size: 1em;
+    align-items: center;
+}
+
 .toast{
     display: block;
     background-color: white;
