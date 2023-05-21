@@ -54,54 +54,53 @@ rhit.JournalEntriesManager = class {
 	}
 
 	add(entry, rating, date){		
-
-		rhit.badVariable = this._ref.add({
-			[rhit.FB_KEY_ENTRY]: entry,
-			[rhit.FB_KEY_RATING]: rating,
-			[rhit.FB_KEY_DATE]: date,
-			[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
-
+		let updated = false;
+		this._ref.where("date", "==", date).get()
+		.then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				this._ref.doc(doc.id).update({
+					[rhit.FB_KEY_ENTRY]: entry,
+					[rhit.FB_KEY_RATING]: rating,
+					[rhit.FB_KEY_DATE]: date,
+					[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
+				})
+				updated = true;
+			});
+			if(!updated){
+				this._ref.add({
+					[rhit.FB_KEY_ENTRY]: entry,
+					[rhit.FB_KEY_RATING]: rating,
+					[rhit.FB_KEY_DATE]: date,
+					[rhit.FB_KEY_LAST_TOUCHED]: firebase.firestore.Timestamp.now()
+				})
+			}
 		})
-		.then(function(docRef){
-			console.log("Doc written with ID: ", docRef.id);
-		})
-		.catch(function(error){
-			console.error("Error adding doc: ", error);
-		})
-
 	}
-
-	beginListening(changeListener) {
-		let query = this._ref.orderBy(rhit.FB_KEY_LAST_TOUCHED, "desc").limit(50)
-		if(this._uid){
-			query = query.where(rhit.FB_KEY_AUTHOR, "==", this.uid);
-		}
-		this._unsubscribe = query
-		.onSnapshot((querySnapshot) => {
-
-			this._documentSnapshots = querySnapshot.docs;
-	
-
-			changeListener();
-
-		});
-	}
-	stopListening() {
-		this._unsubscribe();
-	}
-
 	get length() {
 		return this._documentSnapshots.length;
 	}
-	getJournalAtDate(index) {
-		const docSnapshot = this._documentSnapshots[index];
-		const mq = new rhit.MovieQuote(
-			docSnapshot.id,
-			docSnapshot.get(rhit.FB_KEY_ENTRY),
-			docSnapshot.get(rhit.FB_KEY_DATE),
-			docSnapshot.get(rhit.FB_KEY_RATING)
-		);
-		return mq;
+	openAtDate(date){
+		let a = false;
+		this._ref.where("date", "==", date).get()
+		.then((querySnapshot) => {
+			querySnapshot.forEach((doc) => {
+				a = true;
+				document.querySelector('#journalText').value = doc.data().Entry;
+				let options = document.querySelectorAll('.btn-secondary')
+				let rating = doc.data().Rating;
+				for(let i = 0; i < options.length; i++)
+					if(options[i].classList.contains('active'))
+						options[i].classList.remove('active');
+				options[rating-1].classList.add('active');
+			});
+			if(!a){
+				document.querySelector('#journalText').value = '';
+				let options = document.querySelectorAll('.btn-secondary')
+				for(let i = 0; i < options.length; i++)
+					if(options[i].classList.contains('active'))
+						options[i].classList.remove('active');
+			}
+		})
 	}
 	createCard(entry, date){
 		var card = document.createElement('div');
@@ -110,20 +109,13 @@ rhit.JournalEntriesManager = class {
 		var header = document.createElement('h2');
 		header.textContent = date;
 		var textElement = document.createElement('p');
-		textElement.textContent = date;
+		textElement.textContent = 'Your journal has been saved for ' + date + '. Click to dismiss.';
 		card.appendChild(textElement);
 		var container = document.getElementById('container');
 		container.appendChild(card);
 
 		card.addEventListener('click', (event) => {
-			console.log("click")
-			// Prevent editing when clicking inside the text element
-			if (event.target === textElement) {
-				return;
-			}
-
-			// Disable editing when clicking outside the text element
-			textElement.contentEditable = false;
+			container.innerHTML = '';
 		});
 	}
 
@@ -233,11 +225,12 @@ rhit.GroupsManager = class {
 			author: rhit.fbAuthManager.displayName,
 			timestamp: firebase.firestore.Timestamp.now()
 		});
-		document.querySelector('#postsContainer').innerHTML += `<div class="myPost">
+		document.querySelector('#postsContainer').innerHTML = `<div class="myPost">
 		<div class="postText">
-			<h5>${doc.data().content}</h5>
+			<h5>${content}</h5>
 		</div>
-		</div>`;
+		</div>` +
+		document.querySelector('#postsContainer').innerHTML;
 	}
 
 	makeGroup(name, des){
@@ -374,14 +367,31 @@ rhit.JournalPageController = class {
 		document.querySelector("#signOut").onclick = (event) => {
 			rhit.fbAuthManager.signOut();
 		};
+		document.querySelector("#openButton").onclick = (event) => {
+			let date = document.querySelector("#date").value;
+			if(date)
+				rhit.fbJournalEntriesManager.openAtDate(date);
+			else
+				alert('Choose date');
+		};
 		document.querySelector("#saveButton").addEventListener("click", (event) => {
 			console.log("journal save")
 			const entryJou = document.querySelector("#journalText").value;
-			let date = new Date().toUTCString().slice(5, 16);
-			rhit.fbJournalEntriesManager.add(entryJou, 0, date);
-			rhit.fbJournalEntriesManager.createCard(entryJou,date);
-			console.log("after add");
-			event.preventDefault();
+			let date = document.querySelector("#date").value;
+			let options = document.querySelectorAll('.btn-secondary')
+			let rating;
+			for(let i = 0; i < options.length; i++)
+				if(options[i].classList.contains('active'))
+					rating = i+1;
+			if(date && rating){
+				rhit.fbJournalEntriesManager.add(entryJou, rating, date);
+				rhit.fbJournalEntriesManager.createCard(entryJou,date);
+			}
+			else
+				alert("Choose date and rating")
+			
+			//console.log("after add");
+			//event.preventDefault();
 		});
 	}
 }
