@@ -304,11 +304,13 @@ rhit.JournalPageController = class {
 
 rhit.SoundsPageController = class {
 	constructor () {
+		console.log("sounds");
 
-		document.addEventListener('DOMContentLoaded', function() {
-			const soundButtons = document.querySelectorAll('.sound-button');
-			const soundPlayer = document.getElementById('sound-player');
-			let isPlaying = false;
+		// document.addEventListener('DOMContentLoaded', function() {
+		// 	console.log("sounds");
+		// 	const soundButtons = document.querySelectorAll('.sound-button');
+		// 	const soundPlayer = document.getElementById('sound-player');
+		// 	let isPlaying = false;
 			
 			soundButtons.forEach(function(button) {
 				button.addEventListener('click', function() {
@@ -333,7 +335,7 @@ rhit.SoundsPageController = class {
 				soundPlayer.pause();
 				isPlaying = false;
 			}
-		});
+		// });
 
 		}
 }
