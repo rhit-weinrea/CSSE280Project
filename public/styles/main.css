@@ -220,12 +220,31 @@ body{
     margin-top: 75px;
 }
 
+#journalPage{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#topGroup{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#datePicker{
+    margin: 5px;
+}
+
+#ratingGroup{
+    margin: 5px;
+}
+
 #journalText{
     border-color: black;
     border-width: 2px;
     background-color: #DDDDDD;
     padding:0%;
-    
 }
 
 #saveButton{
@@ -237,6 +256,11 @@ body{
     height: 5vh;
     font-size: 1em;
     align-items: center;
+}
+
+.toast{
+    display: block;
+    background-color: white;
 }
 
 #groupButtonsContainer{
@@ -328,7 +352,7 @@ section {
 
 #postsContainer{
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     overflow-x: hidden;
     overflow-y: auto;
     max-height: 60vh;

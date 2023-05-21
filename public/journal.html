@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons">
   <link rel="stylesheet" href="styles/bootstrap-material-design.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel="stylesheet" href="styles/main.css">
   <title>ChillPill</title>
 </head>
@@ -23,23 +24,35 @@
   <div id="journalPage" class="container page-container">
     <h1>My Journal</h1>
     <hr>
-    <!-- <template>
-      <div>
-        <label for="example-datepicker">Choose a date</label>
-        <b-form-datepicker id="example-datepicker" v-model="value" class="mb-2"></b-form-datepicker>
-        <p>Value: '{{ value }}'</p>
+    <div id="topGroup">
+      <div id="datePicker">
+        <label for="date">Select Date: </label>
+        <input type="date" id="date" name="date">
+        <button id="openButton" class="btn primary">Open at date</button>
       </div>
-    </template>
+      <div id="ratingGroup">
+        <label for="rating">Rate your day: </label>
+        <div id="rating" class="btn-group btn-group-toggle" data-toggle="buttons">
+          <label class="btn btn-secondary">
+            <input type="radio" name="options" id="option1" autocomplete="off"> 1
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="options" id="option2" autocomplete="off"> 2
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="options" id="option3" autocomplete="off"> 3
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="options" id="option4" autocomplete="off"> 4
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="options" id="option5" autocomplete="off"> 5
+          </label>
+        </div>
+      </div>
+      
+    </div>
     
-    <script>
-      export default {
-        data() {
-          return {
-            value: ''
-          }
-        }
-      }
-    </script> -->
     <!-- Textarea 8 rows height -->
     <div id="journalTextWrapper" class="form-outline">
       <textarea class="form-control" id="journalText" rows="15" style="background-color: white;" placeholder="Start Journal Here"></textarea>
@@ -47,6 +60,8 @@
     </div>
 
     <button id="saveButton" class="btn primary">Save</button>
+    <br>
+    <hr>
 
     <ul class="circles">
       <li></li>
@@ -61,7 +76,8 @@
       <li></li>
     </ul>
 
-    <div id="container"></div>
+    <div id="container">
+    </div>
 
   </div>
   <script src="scripts/jquery.min.js"></script>
