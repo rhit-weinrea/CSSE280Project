@@ -10,8 +10,14 @@ body {
 }
 
 
-  h1, h2{
+  h1{
     font-size: 48px;
+    font-family: "Bahnschrift SemiBold", Arial, sans-serif;
+
+  }
+
+  h2{
+    font-size: 30px;
     font-family: "Bahnschrift SemiBold", Arial, sans-serif;
 
   }
@@ -241,6 +247,10 @@ strong{
     font-size: 2em;
 }
 
+section {
+    margin-bottom: 100px;
+  }
+
 .sound-buttons {
     display: flex;
     justify-content: center;
@@ -373,7 +383,18 @@ h5{
     background-color: #8f54a0;
     border-radius: 0px;
     border: 0px solid #ffffff;
+=======
+p {
+    color: #000;
+    @media screen and (prefers-color-scheme: dark) {
+      color: #fff;
+    }
   }
+
+  .dropdown-menu.dropdown-menu-left {
+    position:absolute;
+    left:0px;
+
 
 
 
