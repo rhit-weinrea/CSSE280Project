@@ -239,9 +239,10 @@ rhit.GroupsManager = class {
 	}
 
 	addPost(content, id){
+		let author = rhit.fbAuthManager.displayName?rhit.fbAuthManager.displayName:'Anonymous'
 		this._ref.doc(id).collection('posts').add({
 			content: content,
-			author: rhit.fbAuthManager.displayName,
+			author: author,
 			timestamp: firebase.firestore.Timestamp.now()
 		});
 		document.querySelector('#postsContainer').innerHTML = `<div class="myPost">
@@ -281,8 +282,9 @@ rhit.GroupsManager = class {
 					</div>`;
 				}
 				else{
+					let author = doc.data().author?doc.data().author:'Anonymous'
 					document.querySelector('#postsContainer').innerHTML += `<div class="post">
-					<label for="${doc.id}">&nbsp;${doc.data().author}</label>
+					<label for="${doc.id}">&nbsp;${author}</label>
 					<div class="postText" id="${doc.id}">
 						<h5>${doc.data().content}</h5>
 					</div>
